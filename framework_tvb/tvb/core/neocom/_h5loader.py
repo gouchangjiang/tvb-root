@@ -40,6 +40,7 @@ from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom._registry import Registry
+from tvb.core.data_encryption_handler import DataEncryptionHandler
 
 H5_EXTENSION = '.h5'
 
@@ -161,6 +162,7 @@ class DirLoader(object):
             subdt = getattr(datatype, traited_attr.field_name)
             if subdt is not None:  # Because a non required reference may be not populated
                 self.store(subdt)
+        DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(path))
 
     def path_for(self, h5_file_class, gid):
         """

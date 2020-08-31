@@ -59,6 +59,7 @@ from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.neotraits.db import HasTraitsIndex
+from tvb.core.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.exceptions import ImportException, ServicesBaseException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
@@ -197,6 +198,11 @@ class ImportService(object):
             self.import_project_operations(project, temp_project_path)
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
+            if TvbProfile.current.web.ENCRYPT_STORAGE:
+                project_folder = self.files_helper.get_project_folder(project)
+                DataEncryptionHandler.sync_folders(project_folder)
+                shutil.rmtree(project_path)
+
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
