@@ -264,7 +264,6 @@ class WebSettings(object):
                                                                        'text/javascript', 'text/css',
                                                                        'application/x.ndarray'],
                                              'tools.sessions.on': True,
-                                             'tools.sessions.storage_type': 'ram',
                                              'tools.sessions.timeout': 600,  # 10 hours
                                              'response.timeout': 1000000,
                                              'tools.sessions.locking': 'explicit',
