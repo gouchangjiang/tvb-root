@@ -59,7 +59,7 @@ from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.neotraits.db import HasTraitsIndex
-from tvb.core.data_encryption_handler import DataEncryptionHandler
+from tvb.core.services.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.exceptions import ImportException, ServicesBaseException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
