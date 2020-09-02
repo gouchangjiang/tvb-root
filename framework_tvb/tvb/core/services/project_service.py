@@ -576,15 +576,23 @@ class ProjectService:
                                        datatype.parent_operation.user_group,
                                        datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
-                    to_project = self.find_project(links[0].fk_to_project).name
+                    to_project = self.find_project(links[0].fk_to_project)
+                    to_project_path = self.structure_helper.get_project_folder(to_project)
+
+                    encryption_handler.set_project_active(to_project)
+                    encryption_handler.sync_folders(to_project_path)
+                    to_project_name = to_project.name
 
                     full_path = h5.path_for_stored_index(datatype)
-                    self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
+                    self.structure_helper.move_datatype(datatype, to_project_name, str(new_op.id), full_path)
                     # Move also the ViewModel H5
                     old_folder = self.structure_helper.get_project_folder(project, str(op.id))
                     view_model = adapter.load_view_model(op)
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
-                    self.structure_helper.move_datatype(view_model, to_project, str(new_op.id), vm_full_path)
+                    self.structure_helper.move_datatype(view_model, to_project_name, str(new_op.id), vm_full_path)
+
+                    encryption_handler.sync_folders(to_project_path)
+                    encryption_handler.set_project_inactive(to_project)
 
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
@@ -595,6 +603,7 @@ class ProjectService:
                 specific_remover.remove_datatype(skip_validation)
                 h5_path = h5.path_for_stored_index(datatype)
                 self.structure_helper.remove_datatype_file(h5_path)
+                encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder_from_h5(h5_path))
 
         except RemoveDataTypeException:
             self.logger.exception("Could not execute operation Node Remove!")
@@ -617,7 +626,7 @@ class ProjectService:
             # but we still remove it for the case when no DTs exist
             dao.remove_entity(Operation, operation.id)
             self.structure_helper.remove_operation_data(operation.project.name, operation_id)
-
+            encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(operation.project))
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
@@ -669,6 +678,7 @@ class ProjectService:
             # Make sure Operation folder is removed
             self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
 
+        encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(project))
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
 
@@ -885,3 +895,18 @@ class ProjectService:
     def is_datatype_group(datatype_gid):
         """ Used to check if the dataType with the specified GID is a DataTypeGroup. """
         return dao.is_datatype_group(datatype_gid)
+
+    def get_linked_datatypes_storage_path(self, project):
+        """
+        :return: the file paths to the datatypes that are linked in `project`
+        """
+        paths = []
+        for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
+            # get datatype as a mapped type
+            lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
+            path = h5.path_for_stored_index(lnk_dt)
+            if path is not None:
+                paths.append(path)
+            else:
+                self.logger.warning("Problem when trying to retrieve path on %s:%s!" % (lnk_dt.type, lnk_dt.gid))
+        return paths

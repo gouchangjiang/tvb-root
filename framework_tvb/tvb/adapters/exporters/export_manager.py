@@ -36,16 +36,16 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 from datetime import datetime
-from tvb.adapters.exporters.tvb_export import TVBExporter
+
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
-from tvb.basic.profile import TvbProfile
+from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
-from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
-from tvb.core.entities.model.model_operation import STATUS_ERROR
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.core.services.project_service import ProjectService
 
 
 class ExportManager(object):
@@ -140,25 +140,9 @@ class ExportManager(object):
 
         return export_data
 
-    def _get_linked_datatypes_storage_path(self, project):
-        """
-        :return: the file paths to the datatypes that are linked in `project`
-        """
-        paths = []
-        for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
-            # get datatype as a mapped type
-            lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
-            path = h5.path_for_stored_index(lnk_dt)
-            if path is not None:
-                paths.append(path)
-            else:
-                self.logger.warning("Problem when trying to retrieve path on %s:%s for "
-                                    "export!" % (lnk_dt.type, lnk_dt.gid))
-        return paths
-
     def _export_linked_datatypes(self, project, zip_file):
         files_helper = FilesHelper()
-        linked_paths = self._get_linked_datatypes_storage_path(project)
+        linked_paths = ProjectService().get_linked_datatypes_storage_path(project)
 
         if not linked_paths:
             # do not export an empty operation
