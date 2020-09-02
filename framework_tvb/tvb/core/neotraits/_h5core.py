@@ -134,7 +134,6 @@ class H5File(object):
             if not store_references and isinstance(accessor, Reference):
                 continue
             accessor.store(getattr(datatype, f_name))
-        # DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.path))
 
     def load_into(self, datatype):
         # type: (HasTraits) -> None
@@ -191,7 +190,6 @@ class H5File(object):
         self.visible.store(self.generic_attributes.visible)
         if self.generic_attributes.parent_burst is not None:
             self.parent_burst.store(uuid.UUID(self.generic_attributes.parent_burst))
-        # DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.path))
 
     def load_generic_attributes(self):
         # type: () -> GenericAttributes

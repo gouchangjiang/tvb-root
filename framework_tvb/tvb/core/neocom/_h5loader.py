@@ -162,7 +162,6 @@ class DirLoader(object):
             subdt = getattr(datatype, traited_attr.field_name)
             if subdt is not None:  # Because a non required reference may be not populated
                 self.store(subdt)
-        # DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(path))
 
     def path_for(self, h5_file_class, gid):
         """

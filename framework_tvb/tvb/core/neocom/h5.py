@@ -126,7 +126,6 @@ def store_complete(datatype, base_dir, generic_attributes=GenericAttributes()):
         # Store empty Generic Attributes, in case the file is saved no through ABCAdapter it can still be used
         f.store_generic_attributes(generic_attributes)
 
-    # DataEncryptionHandler.push_folder_to_sync(os.path.dirname(base_dir))
     return index_inst
 
 
@@ -225,7 +224,6 @@ def store_view_model(view_model, base_dir):
                     store_view_model(model_attr[idx], base_dir)
             else:
                 store_view_model(model_attr, base_dir)
-    # DataEncryptionHandler.push_folder_to_sync(os.path.dirname(base_dir))
     return h5_path
 
 
