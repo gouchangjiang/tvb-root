@@ -320,9 +320,8 @@ class ProjectService:
             for one_link in links:
                 dao.remove_entity(Links, one_link.id)
 
-            self.structure_helper.remove_project_structure(project2delete.name)
-
             project_folder = self.structure_helper.get_project_folder(project2delete)
+            self.structure_helper.remove_project_structure(project2delete.name)
             encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
             if os.path.exists(encrypted_path):
                 if os.path.isdir(encrypted_path):
