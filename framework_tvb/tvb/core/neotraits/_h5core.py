@@ -333,7 +333,7 @@ class ViewModelH5(H5File):
         ret = []
         for accessor in self.iter_accessors():
             if isinstance(accessor, Uuid) and not isinstance(accessor, Reference):
-                if accessor.field_name is 'gid':
+                if accessor.field_name is 'gid' or accessor.field_name is 'parent_burst':
                     continue
                 ret.append((accessor.trait_attribute, accessor.load()))
         return ret
