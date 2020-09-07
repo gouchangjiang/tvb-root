@@ -104,7 +104,10 @@ def _request_passfile(simulator_gid, operation_id, base_url, destination_path):
         log.info('Response is: {}'.format(response))
         if response.ok:
             log.info('Passfile downloaded at: {}'.format(destination_path))
-            return _save_file(destination_path, response)
+            path = _save_file(destination_path, response)
+            if not os.path.exists(path):
+                raise Exception("Cannot find password file.")
+            return path
     except HTTPError:
         log.warning(
             "Failed to request passfile from TVB server {} for simulator {}".format(base_url, simulator_gid))

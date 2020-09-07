@@ -126,7 +126,7 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        inputs_in_container = os.path.join('/root/.data', EncryptionHandler(simulator_gid).current_enc_dirname)
+        inputs_in_container = os.path.join('/home/tvb_user/.data', EncryptionHandler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
         my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
