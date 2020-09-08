@@ -105,7 +105,8 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         Update h5 files with generic attributes
         """
         for file in os.listdir(self._get_output_path()):
-            with H5File.from_file(file) as f:
+            path = os.path.join(self._get_output_path(), file)
+            with H5File.from_file(path) as f:
                 f.store_generic_attributes(self.generic_attributes)
         return "", 2
 
