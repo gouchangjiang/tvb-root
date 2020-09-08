@@ -55,6 +55,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
+from tvb.core.services.exceptions import OperationException
 
 try:
     import pyunicore.client as unicore_client
@@ -148,14 +149,19 @@ class HPCSchedulerClient(BackendClient):
         :return: dict of {str: PathFile} objects
         """
         ret = {}
-        for path, meta in working_dir.contents(base)['content'].items():
-            path_url = working_dir.path_urls['files'] + path
-            path = path[1:]  # strip leading '/'
-            if meta['isDirectory']:
-                ret[path] = unicore_client.PathDir(working_dir, path_url, path)
-            else:
-                ret[path] = unicore_client.PathFile(working_dir, path_url, path)
-        return ret
+        try:
+            for path, meta in working_dir.contents(base)['content'].items():
+                path_url = working_dir.path_urls['files'] + path
+                path = path[1:]  # strip leading '/'
+                if meta['isDirectory']:
+                    ret[path] = unicore_client.PathDir(working_dir, path_url, path)
+                else:
+                    ret[path] = unicore_client.PathFile(working_dir, path_url, path)
+                return ret
+        except HTTPError as http_error:
+            if http_error.response.status_code == 404:
+                raise OperationException("Folder {} is not present on HPC storage.")
+            raise http_error
 
     def update_datatype_groups(self):
         # TODO: update column count_results
