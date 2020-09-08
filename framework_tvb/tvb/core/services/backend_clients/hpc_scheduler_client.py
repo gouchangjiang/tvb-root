@@ -189,11 +189,8 @@ class HPCSchedulerClient(BackendClient):
         sim_adapter = SimulatorAdapter()
         sim_adapter.extract_operation_data(operation)
         sim_adapter.generic_attributes.parent_burst = burst_config.gid
-        message, _ = sim_adapter._capture_operation_results(index_list)
 
         burst_service.update_burst_status(burst_config)
-        # self.update_datatype_groups()
-        return message
 
     @staticmethod
     def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs):
