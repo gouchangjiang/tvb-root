@@ -74,6 +74,7 @@ class HPCOperationService(object):
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
+        operation = dao.get_operation_by_id(operation.id)
         folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
         if TvbProfile.current.web.ENCRYPT_STORAGE:
             encryption_handler.inc_project_usage_count(folder)
