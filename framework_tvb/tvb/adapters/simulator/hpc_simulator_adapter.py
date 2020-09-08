@@ -33,8 +33,9 @@
 """
 
 import os
-import uuid
 import typing
+import uuid
+
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, choices, \
     TimeseriesMetricsAdapter
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
@@ -43,6 +44,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, SimulatorAdapterModel
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neocom import h5
+from tvb.core.neotraits._h5core import H5File
 
 
 class HPCSimulatorAdapter(SimulatorAdapter):
@@ -100,14 +102,18 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 
     def _capture_operation_results(self, result):
         """
+        Update h5 files with generic attributes
         """
+        for file in os.listdir(self._get_output_path()):
+            with H5File.from_file(file) as f:
+                f.store_generic_attributes(self.generic_attributes)
         return "", 2
 
     def _ensure_enough_resources(self, available_disk_space, view_model):
         return 0
 
     def launch(self, view_model):
-    # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
+        # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
         simulation_results = super(HPCSimulatorAdapter, self).launch(view_model)
 
         if not self.is_group_launch:
@@ -132,7 +138,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
 
     def __init__(self, storage_path, input_time_series_index):
-        super(HPCTimeseriesMetricsAdapter,self).__init__()
+        super(HPCTimeseriesMetricsAdapter, self).__init__()
         self.storage_path = storage_path
         self.input_time_series_index = input_time_series_index
 
