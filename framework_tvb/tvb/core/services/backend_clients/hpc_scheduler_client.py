@@ -301,6 +301,7 @@ class HPCSchedulerClient(BackendClient):
         # type: (Storage, typing.Union[uuid.UUID, str]) -> list
         output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSimulatorAdapter.OUTPUT_FOLDER
         output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
+        LOGGER.info("Output list {}".format(output_list))
         encryption_handler = EncryptionHandler(simulator_gid)
         encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSimulatorAdapter.OUTPUT_FOLDER)
         encrypted_files = HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
@@ -380,6 +381,7 @@ class HPCSchedulerClient(BackendClient):
         encrypted_files = list()
         for output_filename, output_filepath in output_list.items():
             if type(output_filepath) is not unicore_client.PathFile:
+                LOGGER.info("Object {} is not a file.")
                 continue
             filename = os.path.join(encrypted_dir_path, os.path.basename(output_filename))
             output_filepath.download(filename)
