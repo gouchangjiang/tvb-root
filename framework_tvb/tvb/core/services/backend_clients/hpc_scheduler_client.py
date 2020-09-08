@@ -160,7 +160,7 @@ class HPCSchedulerClient(BackendClient):
                 return ret
         except HTTPError as http_error:
             if http_error.response.status_code == 404:
-                raise OperationException("Folder {} is not present on HPC storage.")
+                raise OperationException("Folder {} is not present on HPC storage.".format(base))
             raise http_error
 
     def update_datatype_groups(self):
