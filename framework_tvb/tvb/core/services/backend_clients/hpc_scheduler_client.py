@@ -189,11 +189,11 @@ class HPCSchedulerClient(BackendClient):
         sim_adapter = SimulatorAdapter()
         sim_adapter.extract_operation_data(operation)
         sim_adapter.generic_attributes.parent_burst = burst_config.gid
-        mesage, _ = sim_adapter._capture_operation_results(index_list)
+        message, _ = sim_adapter._capture_operation_results(index_list)
 
         burst_service.update_burst_status(burst_config)
         # self.update_datatype_groups()
-        return mesage
+        return message
 
     @staticmethod
     def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs):
@@ -307,6 +307,7 @@ class HPCSchedulerClient(BackendClient):
 
         LOGGER.info(working_dir.properties)
         LOGGER.info(working_dir.listdir())
+        LOGGER.info(encrypted_files)
         return encrypted_files
 
     @staticmethod
@@ -346,6 +347,10 @@ class HPCSchedulerClient(BackendClient):
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project, str(operation.id))
         h5_filenames = EncryptionHandler(simulator_gid).decrypt_files_to_dir(simulation_results, operation_dir)
+        LOGGER.info("Decrypted h5: {}".format(h5_filenames))
+        LOGGER.info("Metric op: {}".format(metric_op))
+        LOGGER.info("Metric file: {}".format(metric_file))
+
         return h5_filenames, metric_op, metric_file
 
     @staticmethod
