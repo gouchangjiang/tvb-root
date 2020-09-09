@@ -36,10 +36,10 @@ import os
 import random
 import string
 import uuid
+
 import pyAesCrypt
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-
 
 LOGGER = get_logger(__name__)
 
@@ -68,6 +68,11 @@ class EncryptionHandler(object):
         for dirr in [self.enc_data_dir, self.pass_dir]:
             if not os.path.isdir(dirr):
                 os.makedirs(dirr)
+
+    def cleanup(self):
+        for dirr in [self.enc_data_dir, self.pass_dir]:
+            if os.path.exists(dirr) and os.path.isdir(dirr):
+                os.rmdir(dirr)
 
     @staticmethod
     def generate_random_password(pass_size):
