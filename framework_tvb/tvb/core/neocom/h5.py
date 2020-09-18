@@ -290,7 +290,7 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
 
     with ViewModelH5(vm_path, view_model) as vm_h5:
         references = vm_h5.gather_references()
-        uuids = vm_h5.gather_references_by_uuid()
+        uuids = vm_h5.gather_datatypes_references()
 
         for _, gid in references:
             if not gid:

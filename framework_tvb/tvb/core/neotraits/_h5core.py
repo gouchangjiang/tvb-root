@@ -323,12 +323,12 @@ class ViewModelH5(H5File):
                 ref = Accessor(attr, self)
             setattr(self, attr.field_name, ref)
 
-    def gather_references_by_uuid(self):
+    def gather_datatypes_references(self):
         """
         Mind that ViewModelH5 stores references towards ViewModel objects (eg. Coupling) as Reference attributes, and
         references towards existent Datatypes (eg. Connectivity) as Uuid.
         Thus, the method gather_references will return only references towards other ViewModels, and we need this
-        method to gather also the other references.
+        method to gather also datatypes references.
         """
         ret = []
         for accessor in self.iter_accessors():
