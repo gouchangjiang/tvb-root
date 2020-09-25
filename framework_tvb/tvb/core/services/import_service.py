@@ -319,7 +319,7 @@ class ImportService(object):
         h5.store_view_model(view_model, new_op_folder)
         operation_entity.view_model_gid = view_model.gid.hex
         dao.store_entity(operation_entity)
-        return view_model.gid
+        return view_model
 
     def import_project_operations(self, project, import_path):
         """
