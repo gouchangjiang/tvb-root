@@ -83,11 +83,11 @@ The command for running our tests has two forms:
   1. Recommendation when working with a git clone of this TVB Github repo:
   
             cd [folder_where_tvb_framework_is]
-            pytest tvb/test/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
+            pytest tvb/tests/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
             # default profile value is TEST_SQLITE_PROFILE
     
             cd [folder_where_tvb_library_is]
-            pytest tvb/test/library [--junitxml=path]
+            pytest tvb/tests/library [--junitxml=path]
 
   2. The second alternative form of running TVB tests, when installing TVB from Pypi, is:
         
