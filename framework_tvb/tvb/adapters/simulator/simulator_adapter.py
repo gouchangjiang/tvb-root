@@ -53,7 +53,7 @@ from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
@@ -65,17 +65,18 @@ from tvb.simulator.simulator import Simulator
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SimulatorAdapterForm, self).__init__(project_id)
         self.coupling_choices = get_ui_name_to_coupling_dict()
         default_coupling = list(self.coupling_choices.values())[0]
 
-        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self,
-                                                     name=self.get_input_name(), conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self.project_id,
+                                                     name=self.get_input_name(),
+                                                     conditions=self.get_filters())
         self.coupling = SelectField(
-            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
+            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self.project_id,
             name='coupling', choices=self.coupling_choices)
-        self.conduction_speed = FloatField(Simulator.conduction_speed, self)
+        self.conduction_speed = FloatField(Simulator.conduction_speed, self.project_id)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
 
@@ -274,8 +275,12 @@ class SimulatorAdapter(ABCAdapter):
             history.fill_into(self.algorithm)
 
         region_map, region_volume_map = self._try_load_region_mapping()
-
         for monitor in self.algorithm.monitors:
+
+            if monitor.period > view_model.simulation_length:
+                raise InvalidParameterException("Sampling period for monitors can not be bigger "
+                                                "than the simulation length!")
+
             m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)

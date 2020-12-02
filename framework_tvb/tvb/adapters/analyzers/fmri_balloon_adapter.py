@@ -46,7 +46,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 
@@ -66,6 +66,21 @@ class BalloonModelAdapterModel(ViewModel):
         doc="""The integration time step size for the balloon model (s).
             If none is provided, by default, the TimeSeries sample period is used."""
     )
+
+    tau_s = Float(
+        label=r":math:`\tau_s`",
+        default=1.54,
+        required=True,
+        doc="""Balloon model parameter. Time of signal decay (s)""")
+
+    tau_f = Float(
+        label=r":math:`\tau_f`",
+        default=1.44,
+        required=True,
+        doc=""" Balloon model parameter. Time of flow-dependent elimination or
+            feedback regulation (s). The average  time blood take to traverse the
+            venous compartment. It is the  ratio of resting blood volume (V0) to
+            resting blood flow (F0).""")
 
     neural_input_transformation = Attr(
         field_type=str,
@@ -99,15 +114,18 @@ class BalloonModelAdapterModel(ViewModel):
 
 class BalloonModelAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BalloonModelAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.dt = ScalarField(BalloonModelAdapterModel.dt, self)
-        self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation, self)
-        self.bold_model = ScalarField(BalloonModelAdapterModel.bold_model, self)
-        self.RBM = ScalarField(BalloonModelAdapterModel.RBM, self)
+    def __init__(self, project_id=None):
+        super(BalloonModelAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.dt = FloatField(BalloonModelAdapterModel.dt, self.project_id)
+        self.tau_s = FloatField(BalloonModelAdapterModel.tau_s, self.project_id)
+        self.tau_f = FloatField(BalloonModelAdapterModel.tau_f, self.project_id)
+        self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation,
+                                                       self.project_id)
+        self.bold_model = StrField(BalloonModelAdapterModel.bold_model, self.project_id)
+        self.RBM = BoolField(BalloonModelAdapterModel.RBM, self.project_id)
 
     @staticmethod
     def get_view_model():
@@ -165,6 +183,10 @@ class BalloonModelAdapter(ABCAdapter):
         else:
             algorithm.dt = self.input_time_series_index.sample_period / 1000.
 
+        if view_model.tau_s is not None:
+            algorithm.tau_s = view_model.tau_s
+        if view_model.tau_f is not None:
+            algorithm.tau_f = view_model.tau_f
         if view_model.bold_model is not None:
             algorithm.bold_model = view_model.bold_model
         if view_model.RBM is not None:

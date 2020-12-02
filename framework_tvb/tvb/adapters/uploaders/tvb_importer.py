@@ -57,10 +57,11 @@ class TVBImporterModel(UploaderViewModel):
 
 class TVBImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TVBImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(TVBImporterForm, self).__init__(project_id)
 
-        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), self, name='data_file')
+        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), self.project_id,
+                                          'data_file', self.temporary_files)
 
     @staticmethod
     def get_view_model():
@@ -129,6 +130,7 @@ class TVBImporter(ABCUploader):
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
+                        service.check_import_references(view_model.data_file, datatype)
                         service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
                     except ImportException as excep:

@@ -62,13 +62,13 @@ class ZIPConnectivityImporterModel(UploaderViewModel):
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ZIPConnectivityImporterForm, self).__init__(project_id)
 
-        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', self,
-                                         name='uploaded')
-        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self, name='normalization',
-                                         choices=NORMALIZATION_OPTIONS)
+        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', self.project_id, 'uploaded',
+                                         self.temporary_files)
+        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self.project_id,
+                                         name='normalization', choices=NORMALIZATION_OPTIONS)
 
     @staticmethod
     def get_view_model():
@@ -172,14 +172,15 @@ class ZIPConnectivityImporter(ABCUploader):
             if view_model.normalization:
                 result.weights = result.scaled_weights(view_model.normalization)
 
-        # Fill and check tracts
+        # Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library.
         if tract_matrix is not None:
-            if numpy.any([x < 0 for x in tract_matrix.flatten()]):
-                raise Exception("Negative values are not accepted in tracts matrix! "
-                                "Please check your file, and use values >= 0")
-            if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
-                raise Exception("Unexpected shape for tracts matrix! "
-                                "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
+            if tract_matrix.size != 0:
+                if numpy.any([x < 0 for x in tract_matrix.flatten()]):
+                    raise Exception("Negative values are not accepted in tracts matrix! "
+                                    "Please check your file, and use values >= 0")
+                if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                    raise Exception("Unexpected shape for tracts matrix! "
+                                    "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
             result.tract_lengths = tract_matrix
 
         if orientation is not None:
