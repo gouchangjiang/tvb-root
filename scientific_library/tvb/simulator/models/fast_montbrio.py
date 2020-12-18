@@ -33,7 +33,8 @@ def run_loop(weights, delays,
              nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
              nto=16,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
              progress=False,
-             icfun=default_icfun):
+             icfun=default_icfun,
+             filename="CPU_result_"):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
     nn = weights.shape[0]
     w = weights.astype(np.float32)
@@ -63,16 +64,21 @@ def run_loop(weights, delays,
     # start time stepping
     for t in (tqdm.trange if progress else range)(total_wins):
         wrV = rng.standard_normal(size=(2, nh, nn), dtype='f') #, out=wrV)  # ~15% time here
+        #wrV = rng.uniform(low=0, high=1 , size=(2, nh, nn))
         loop(nrV, r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
         tavg_trace[t] = tavg
+        file_name_r = filename + "_r_t" + str(t) + ".txt"
+        file_name_V = filename + "_V_t" + str(t) + ".txt"
+        np.savetxt(file_name_r, tavg[:,0,:])
+        np.savetxt(file_name_V, tavg[:,1,:])
+
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
     return tavg_trace.reshape((-1,) + tavg.shape[1:]), bold_trace
 
-
-def run_gpu_loop(weights, delays,
+def run_gpu_loop(weights, delays, r_sigmas, V_sigmas,
              total_time=60e3, bold_tr=1800, coupling_scaling=0.01,
-             r_sigma=1e-3, V_sigma=1e-3,
+             #r_sigma=1e-3, V_sigma=1e-3,
              I=1.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
              dt=1.0,
              nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
@@ -104,8 +110,8 @@ def run_gpu_loop(weights, delays,
         bold_state[:,1:] = 1.0
         bold_out = np.zeros((nn, nt), 'f')                             # buffer for bold output
         icfun(-np.r_[:nh]*dt, rV)
-    I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [
-        nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
+    I, Delta, eta, tau, J, cr, cv, r_sigmas, V_sigmas = [
+        nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigmas, V_sigmas)]
     print('workspace allocations done')
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
@@ -116,8 +122,8 @@ def run_gpu_loop(weights, delays,
     bold_skip = int(bold_tr / win_len)
     # pinned memory for speeding up kernel invocations
     from numba.cuda import to_device, pinned_array
-    g_nrV, g_r, g_V, g_rngs, g_w, g_d, g_tavg, g_bold_state, g_bold_out = [
-        to_device(_) for _ in (nrV, r, V, rngs, w, d, tavg, bold_state, bold_out)]
+    g_nrV, g_r, g_V, g_rngs, g_w, g_d, g_tavg, g_bold_state, g_bold_out, g_r_sigmas, g_V_sigmas = [
+        to_device(_) for _ in (nrV, r, V, rngs, w, d, tavg, bold_state, bold_out, r_sigmas, V_sigmas)]
     p_tavg = pinned_array(tavg.shape, dtype=np.float32)
     p_bold_out = pinned_array(bold_out.shape, dtype=np.float32)
     # TODO mem map this, since it will get too big
@@ -126,10 +132,17 @@ def run_gpu_loop(weights, delays,
     # start time stepping
     print('starting time stepping')
     for t in (tqdm.trange if progress else range)(total_wins):
+        print(t)
         loop[grid_dim_x, block_dim_x](g_nrV, g_r, g_V, g_rngs, g_w, g_d, g_tavg, g_bold_state, g_bold_out,
-                     I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
+                     I, Delta, eta, tau, J, cr, cv, g_r_sigmas, g_V_sigmas)
         g_tavg.copy_to_host(p_tavg)
-        # print(p_tavg)
+        for time_step in range(nto):
+            file_name_r = "D:/result/GPU_result_r_t" + str(t) + "_ts" + str(time_step) +".txt"
+            file_name_V = "D:/result/GPU_result_V_t" + str(t) + "_ts" + str(time_step) +".txt"
+            np.savetxt(file_name_r, p_tavg[time_step,0])
+            np.savetxt(file_name_V, p_tavg[time_step,1])
+        print(p_tavg)
+
         # tavg_trace[t] = p_tavg
         if t % bold_skip == 0:
             g_bold_out.copy_to_host(p_bold_out)
@@ -152,9 +165,23 @@ def grid_search(loop, **params):
 
 
 if __name__ == '__main__':
-    nn = 96
-    w = np.random.randn(nn, nn)**2
-    d = np.random.rand(nn, nn)**2 * 15
+    nn = 96 # number of nodes
+    w = np.random.randn(nn, nn)**2 #standard normalization
+    d = np.random.rand(nn, nn)**2 * 10 #uniform distribution
+    r_sigmas = np.arange(3e-3, 0.011, 5e-4, dtype=np.float32)
+    V_sigmas = np.arange(1e-3, 0.009, 5e-4, dtype=np.float32)
+
+    #r_sigmas = np.zeros(16, 'f')
+    #V_sigmas = np.zeros(16, 'f')
+
     ns = 60
-    params = dict(dt=0.05, total_time=60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
-    run_gpu_loop(w, d, **params)
+    #params = dict(dt=0.05, total_time=60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
+    params = dict(dt=0.05, total_time=60e3, I=1.0, tau=10.0, progress=True)
+    run_gpu_loop(w, d, r_sigmas, V_sigmas, **params)
+
+    # for index_r in range(len(r_sigmas)):
+    #     for index_v in range(len(V_sigmas)):
+    #         filenameparameter = "D:/result/CPU_result_"+"r"+str(index_r)+"v"+str(index_v)
+    #         params = dict(dt=0.05, total_time=60e3, I=1.0, r_sigma=r_sigmas[0], V_sigma=V_sigmas[0], tau=10.0,
+    #                       progress=True, filename=filenameparameter)
+    #         run_loop(w, d, **params)
